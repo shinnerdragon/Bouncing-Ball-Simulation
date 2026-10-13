@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Draco ball simulator</title>
+    <style>
+      body {
+        margin: 0;
+        background-color: #111;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        overflow: hidden;
+      }
+      canvas {
+        background-color: #1a1a1a;
+        border-radius: 50%; 
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="myCanvas"></canvas>
+    <script>
+      const canvas = document.getElementById("myCanvas");
+      const ctx = canvas.getContext("2d");
+
+   
+      const radiusContainer = 300;
+      canvas.width = radiusContainer * 2;
+      canvas.height = radiusContainer * 2;
+
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+
+      class Ball {
+        constructor(x, y, vx, vy, color) {
+          this.x = x;
+          this.y = y;
+          this.vx = vx;
+          this.vy = vy;
+          this.radio = 10;
+          this.color = color;
+          this.cooldown = 0;
+        }
+
+        draw() {
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.radio, 0, Math.PI * 2);
+          ctx.fillStyle = this.color;
+          ctx.fill();
+          ctx.closePath();
+        }
+
+        move() {
+          this.x += this.vx;
+          this.y += this.vy;
+          if (this.cooldown > 0) this.cooldown--;
+        }
+      }
+
+      function bounceBorders(ball) {
+        const dx = ball.x - centerX;
+        const dy = ball.y - centerY;
+        const distance = Math.hypot(dx, dy);
+
+        if (distance + ball.radio > radiusContainer) {
+          const nx = dx / distance;
+          const ny = dy / distance;
+          const dot = ball.vx * nx + ball.vy * ny;
+
+          ball.vx -= 2 * dot * nx;
+          ball.vy -= 2 * dot * ny;
+
+          ball.x = centerX + nx * (radiusContainer - ball.radio);
+          ball.y = centerY + ny * (radiusContainer - ball.radio);
+        }
+      }
+
+      function randomColor() {
+        const tone = ["#ff3366", "#33ccff", "#ffcc00", "#00ff99", "#cc33ff"];
+        return tone[Math.floor(Math.random() * tone.length)];
+      }
+
+      function colitionCheck() {
+       
+        for (let i = 0; i < balls.length; i++) {
+          for (let j = i + 1; j < balls.length; j++) {
+            let p1 = balls[i];
+            let p2 = balls[j];
+
+            let dx = p1.x - p2.x;
+            let dy = p1.y - p2.y;
+            let distance = Math.hypot(dx, dy);
+
+            
+            if (distance < p1.radio + p2.radio) {
+              let tempVx = p1.vx;
+              let tempVy = p1.vy; 
+              p1.vx = p2.vx;
+              p1.vy = p2.vy;
+              p2.vx = tempVx;
+              p2.vy = tempVy;
+
+              let superposition = (p1.radio + p2.radio - distance) / 2;
+              let nx = dx / distance;
+              let ny = dy / distance;
+
+              p1.x += nx * superposition;
+              p1.y += ny * superposition;
+              p2.x -= nx * superposition;
+              p2.y -= ny * superposition;
+
+              if (p1.cooldown === 0 && p2.cooldown === 0 && balls.length < 10000) {
+                p1.cooldown = 10;
+                p2.cooldown = 10;
+
+                let vx = (Math.random() - 0.5) * 6;
+                let vy = (Math.random() - 0.5) * 6;
+                balls.push(new Ball(centerX, centerY, vx, vy, randomColor()));
+              }
+            }
+          }
+        }
+      }
+
+      let balls = [
+        new Ball(centerX - 50, centerY, 3, 2, randomColor()),
+        new Ball(centerX + 50, centerY, -3, -1, randomColor())
+      ];
+
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radiusContainer, 0, Math.PI * 2);
+        ctx.strokeStyle = "#333";
+        ctx.lineWidth = 5;
+        ctx.stroke();
+
+        colitionCheck();
+
+        for (let ball of balls) {
+          ball.move();
+          bounceBorders(ball);
+          ball.draw();
+        }
+
+        requestAnimationFrame(animate);
+      }
+
+      animate();
+    </script>
+  </body>
+</html>
